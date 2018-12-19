@@ -66,7 +66,8 @@ namespace EditTag
 
             var albumYear = Console.ReadLine();
 
-            foreach (var file in Directory.GetFiles(folderPath))
+            var files = Directory.GetFiles(folderPath);
+            foreach (var file in files)
             {
                 var fileTags = TagLib.File.Create(file);
                 if (albumArtist != null)
@@ -77,6 +78,11 @@ namespace EditTag
                 fileTags.Tag.Album = albumTitle;
                 fileTags.Tag.Genres = new string[] { albumGenre };
                 fileTags.Tag.Year = uint.Parse(albumYear);
+
+                if (fileTags.Tag.TrackCount != files.Count())
+                {
+                    fileTags.Tag.TrackCount = (uint) files.Count(); // Count is an int(!?) so we need to convert it.
+                }
                 fileTags.Save();
             }
         }
@@ -84,6 +90,8 @@ namespace EditTag
         static void EditTrackTags(string filePath)
         {
             var fileTags = TagLib.File.Create(filePath);
+
+            Console.WriteLine($"Editing information for track {fileTags.Tag.Track}.");
 
             if (fileTags.Tag.Performers.Length > 0)
             {
@@ -134,7 +142,7 @@ namespace EditTag
             var fileTags = TagLib.File.Create(file);
 
             fileInfo.MoveTo(System.IO.Path.Combine(fileInfo.DirectoryName,
-                $"{fileTags.Tag.Track} - {fileTags.Tag.Title}.{fileInfo.Extension}"));
+                $"{fileTags.Tag.Track} - {fileTags.Tag.Title}{fileInfo.Extension}"));
         }
     }
 }
