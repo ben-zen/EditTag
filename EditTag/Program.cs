@@ -1,16 +1,51 @@
-﻿using System;
+﻿// Copyright (C) 2018 Studio Perigee.
+// Licensed under the MIT license.
+
+using CommandLine;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace EditTag
 {
     class Program
     {
+        public enum AlbumProperties
+        {
+            AlbumArtists,
+            AlbumTitle,
+            DiskCount, // Setting this value implies TrackProperties.DiskNumber will also be set.
+            Genre,
+            Publisher,
+            TrackCount,
+            Year
+        }
+
+        public enum TrackProperties
+        {
+            Artists,
+            DiskNumber,
+            Title,
+            TrackNumber
+        }
+
+        public class Options
+        {
+            [Option(HelpText = "Declares the folder that EditTags will update tags for, treating the folder as a single album.")]
+            public string AlbumDirectory { get; set; }
+
+            [Option(Separator = ',', HelpText = "If this parameter is set, only the album properties supplied will be edited.")]
+            public List<string> AlbumProperties { get; set; }
+
+            [Option(Separator = ',', HelpText = "If set, declares the track properties that EditTags will offer to edit for each track.")]
+            public List<string> TrackProperties { get; set; }
+        }
+
         static void Main(string[] args)
         {
+            var result = Parser.Default.ParseArguments<Options>(args);
             // Confirm that the first argument (only?) is a folder path.
             if (!Directory.Exists(args[0]))
             {
@@ -36,14 +71,19 @@ namespace EditTag
 
         static bool GetYesNoResponse()
         {
-            switch (Console.ReadLine().ToLowerInvariant())
+            while (true)
             {
-                case "":
-                case "y":
-                    return true;
-                case "n":
-                default:
-                    return false;
+                switch (Console.ReadLine().ToLowerInvariant())
+                {
+                    case "":
+                    case "y":
+                        return true;
+                    case "n":
+                        return false;
+                    default:
+                        Console.WriteLine("Enter n for no, or y for yes; or just hit enter for yes.");
+                        break;
+                }
             }
         }
 
