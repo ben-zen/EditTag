@@ -12,7 +12,7 @@ namespace EditTag
 {
     class Program
     {
-        public enum AlbumProperties
+        public enum AlbumProperty
         {
             AlbumArtists,
             AlbumTitle,
@@ -23,7 +23,7 @@ namespace EditTag
             Year
         }
 
-        public enum TrackProperties
+        public enum TrackProperty
         {
             Artists,
             DiskNumber,
@@ -33,39 +33,100 @@ namespace EditTag
 
         public class Options
         {
-            [Option(HelpText = "Declares the folder that EditTags will update tags for, treating the folder as a single album.")]
+            [Option(Required = false, HelpText = "Declares the folder that EditTags will update tags for, treating the folder as a single album.")]
             public string AlbumDirectory { get; set; }
 
-            [Option(Separator = ',', HelpText = "If this parameter is set, only the album properties supplied will be edited.")]
-            public List<string> AlbumProperties { get; set; }
+            [Option(Required = true, Separator = ',')]
+            public List<AlbumProperty> AlbumProperties { get; set; }
 
-            [Option(Separator = ',', HelpText = "If set, declares the track properties that EditTags will offer to edit for each track.")]
-            public List<string> TrackProperties { get; set; }
+            [Option(Default = false)]
+            public bool Rename { get; set; }
+
+            [Option(Required = true, Separator = ',')]
+            public List<TrackProperty> TrackProperties { get; set; }
+
+            [Option(Required = false, Default = false)]
+            public bool Verbose { get; set; }
         }
 
-        static void Main(string[] args)
+        static void WriteHelp()
         {
-            var result = Parser.Default.ParseArguments<Options>(args);
+            var writer = Console.Out;
+            writer.WriteLine("EditTag v1.0");
+            writer.WriteLine("Copyright (c) 2019 Studio Perigee.");
+            writer.WriteLine("----------");
+            writer.WriteLine();
+
+            // Write all of the option strings.
+
+
+            writer.WriteLine("--help \t Present this help screen.");
+            writer.WriteLine("--version \t Get version information.");
+        }
+
+        static void HandleErrors(IEnumerable<Error> errors)
+        {
+            foreach (var error in errors)
+            {
+                switch (error.Tag)
+                {
+                    case ErrorType.HelpRequestedError:
+                        WriteHelp();
+                        break;
+                    default:
+                        Console.WriteLine($"Unexpected error {Enum.GetName(typeof(ErrorType), error.Tag)} encountered.");
+                        break;
+                }
+            }
+        }
+
+        static void HandleOperation(Options options)
+        {
+            if (options.Verbose)
+            {
+                
+            }
+
+            var albumDirectory = (options.AlbumDirectory != null) ? options.AlbumDirectory : Directory.GetCurrentDirectory();
             // Confirm that the first argument (only?) is a folder path.
-            if (!Directory.Exists(args[0]))
+            if (!Directory.Exists(albumDirectory))
             {
                 Console.WriteLine("Enter a directory that exists!");
                 return;
             }
+
             // Loop over files in a supplied directory.
 
             // Check for argument someday...
-            EditAlbumTags(args[0]);
+            EditAlbumTags(albumDirectory);
 
-            foreach (var file in Directory.GetFiles(args[0]))
+            foreach (var file in Directory.GetFiles(albumDirectory))
             {
                 EditTrackTags(file);
             }
 
-            // Rename files to match their tags.
-            foreach (var file in Directory.GetFiles(args[0]))
+            if (options.Rename)
             {
-                RenameFile(file);
+                // Rename files to match their tags.
+                foreach (var file in Directory.GetFiles(albumDirectory))
+                {
+                    RenameFile(file);
+                }
+            }
+        }
+
+        static void Main(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                Console.WriteLine("Run `EditTag.exe --help` for help.");
+            }
+            else
+            {
+                var parser = new Parser(opts => { opts.HelpWriter = null; opts.CaseInsensitiveEnumValues = true; });
+                parser.ParseArguments<Options>(args)
+                    .WithNotParsed(HandleErrors)
+                    .WithParsed(HandleOperation);
             }
         }
 
